@@ -23,6 +23,15 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     return { ok: true, db, dbError, time: new Date().toISOString() }
   })
 
+  app.post('/admin/cleanup', async (req, reply) => {
+  // In prod, guard with a shared secret header. For now, dev-only.
+  if (process.env.NODE_ENV === 'production') {
+    return reply.code(403).send({ error: 'Disabled' })
+  }
+  const { cleanupExpired } = await import('../cleanup.js')
+  return cleanupExpired()
+})
+
   await authRoutes(app)
   await userRoutes(app)
   await pairRoutes(app)

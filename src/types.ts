@@ -79,8 +79,9 @@ export type ApiMessage = {
   text: string
   createdAt: string
   status: 'sending' | 'sent' | 'read'
+  isIncognito: boolean
+  expiresAt: string
 }
-
 export type ApiGift = {
   id: string
   name: string

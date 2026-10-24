@@ -85,6 +85,7 @@ CREATE INDEX sessions_expiry_idx ON sessions (expires_at);
 -- ============================================================
 CREATE TYPE feed_kind AS ENUM ('note', 'photo', 'milestone', 'mood');
 
+
 CREATE TABLE feed_items (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   couple_id    UUID NOT NULL REFERENCES couples(id) ON DELETE CASCADE,
@@ -93,11 +94,13 @@ CREATE TABLE feed_items (
   text         TEXT NOT NULL,
   image_url    TEXT,
   mood         TEXT,
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at   TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '60 days')
 );
 
 CREATE INDEX feed_items_couple_created_idx ON feed_items (couple_id, created_at DESC);
 CREATE INDEX feed_items_author_idx ON feed_items (author_id);
+CREATE INDEX feed_items_expires_idx ON feed_items (expires_at);
 
 -- ============================================================
 -- feed_reactions  (one per user per item; toggle = INSERT / DELETE)
@@ -115,17 +118,19 @@ CREATE INDEX feed_reactions_user_idx ON feed_reactions (user_id);
 -- messages  (chat)
 -- ============================================================
 CREATE TABLE messages (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  couple_id   UUID NOT NULL REFERENCES couples(id) ON DELETE CASCADE,
-  sender_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  text        TEXT NOT NULL,
-  read_at     TIMESTAMPTZ,                     -- NULL = unread
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  couple_id    UUID NOT NULL REFERENCES couples(id) ON DELETE CASCADE,
+  sender_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  text         TEXT NOT NULL,
+  read_at      TIMESTAMPTZ,
+  is_incognito BOOLEAN NOT NULL DEFAULT false,               -- new
+  expires_at   TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '60 days'),  -- new
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX messages_couple_created_idx ON messages (couple_id, created_at DESC);
-CREATE INDEX messages_unread_idx ON messages (couple_id, sender_id)
-  WHERE read_at IS NULL;
+CREATE INDEX messages_unread_idx ON messages (couple_id, sender_id) WHERE read_at IS NULL;
+CREATE INDEX messages_expires_idx ON messages (expires_at);  -- new
 
 -- ============================================================
 -- gifts  (catalog — seeded, not user-editable in v1)
@@ -150,10 +155,12 @@ CREATE TABLE sent_gifts (
   to_user_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   note         TEXT NOT NULL DEFAULT '',
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at   TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '60 days'),
   CHECK (from_user_id <> to_user_id)
 );
 
 CREATE INDEX sent_gifts_couple_created_idx ON sent_gifts (couple_id, created_at DESC);
+CREATE INDEX sent_gifts_expires_idx ON sent_gifts (expires_at);
 
 -- ============================================================
 -- donations

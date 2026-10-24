@@ -9,6 +9,7 @@ import { attachUser } from './middleware/auth.js'
 import path from 'path'
 import fastifyStatic from '@fastify/static'
 import { existsSync } from 'fs'
+import { startCleanupLoop, stopCleanupLoop } from './cleanup.js'
 
 const allowedOrigins = [
   config.frontendOrigin,
@@ -48,6 +49,7 @@ async function main(): Promise<void> {
 
   app.addHook('preHandler', attachUser)
   await registerRoutes(app)
+  startCleanupLoop((msg) => app.log.info(msg))
   const distPath = path.resolve(process.cwd(), '../dist')
   if (existsSync(distPath)) {
     await app.register(fastifyStatic, {
@@ -70,6 +72,7 @@ async function main(): Promise<void> {
   }
 
   app.addHook('onClose', async () => {
+     stopCleanupLoop()
     await pool.end()
   })
 
