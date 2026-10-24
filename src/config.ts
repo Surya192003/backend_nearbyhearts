@@ -1,8 +1,12 @@
 const isProd = process.env.NODE_ENV === 'production'
 
 function normaliseOrigin(value: string): string {
-  return value.replace(/\/+$/, '')
+  return value.trim().replace(/\/+$/, '')
 }
+
+const rawFrontendOrigin = normaliseOrigin(
+  process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
+)
 
 export const config = {
   isProd,
@@ -10,9 +14,7 @@ export const config = {
   host: '0.0.0.0',
   databaseUrl: process.env.DATABASE_URL ?? '',
   databaseSsl: process.env.DATABASE_SSL === 'true',
-  frontendOrigin: normaliseOrigin(
-    process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
-  ),
+  frontendOrigin: rawFrontendOrigin,
   sessionCookie: {
     name: 'nh_session',
     httpOnly: true,
@@ -20,4 +22,10 @@ export const config = {
     secure: isProd,
     path: '/',
   },
+}
+
+if (!isProd) {
+  console.log(`[config] FRONTEND_ORIGIN = ${JSON.stringify(rawFrontendOrigin)}`)
+  console.log(`[config] NODE_ENV       = ${process.env.NODE_ENV ?? '(unset)'}`)
+  console.log(`[config] DATABASE_SSL   = ${config.databaseSsl}`)
 }
