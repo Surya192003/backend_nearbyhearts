@@ -41,5 +41,4 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
   await messageRoutes(app)
   await giftRoutes(app)
   await donationRoutes(app)
-  await coupleRoutes(app)
 }
