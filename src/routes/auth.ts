@@ -4,7 +4,6 @@ import { generateToken, hashToken, SESSION_TTL_DAYS } from '../auth.js'
 import { requiresAuth } from '../middleware/auth.js'
 import type { ApiCouple, ApiPartner, ApiUser } from '../types.js'
 import { config } from '../config.js'
-import { coupleRoutes } from './couples.js'
 
 type UserRow = {
     id: string
