@@ -4,6 +4,7 @@ import { generateToken, hashToken, SESSION_TTL_DAYS } from '../auth.js'
 import { requiresAuth } from '../middleware/auth.js'
 import type { ApiCouple, ApiPartner, ApiUser } from '../types.js'
 import { config } from '../config.js'
+import { coupleRoutes } from './couples.js'
 
 type UserRow = {
     id: string
@@ -118,6 +119,71 @@ async function issueSession(
 }
 
 export async function authRoutes(app: FastifyInstance): Promise<void> {
+
+      app.post<{
+    Body: {
+      email: string
+      password: string
+      firstName: string
+      lastName: string
+      city?: string
+    }
+  }>('/auth/signup', async (req, reply) => {
+    const { email, password, firstName, lastName, city } = req.body ?? ({} as never)
+    if (!email || !password || !firstName || !lastName) {
+      return reply
+        .code(400)
+        .send({ error: 'email, password, firstName, lastName required' })
+    }
+    if (password.length < 6) {
+      return reply
+        .code(400)
+        .send({ error: 'Password must be at least 6 characters' })
+    }
+
+    try {
+      const result = await pool.query<{ id: string }>(
+        `INSERT INTO users (email, password_hash, first_name, last_name, city)
+         VALUES ($1, crypt($2, gen_salt('bf', 10)), $3, $4, $5)
+         RETURNING id`,
+        [
+          email.trim().toLowerCase(),
+          password,
+          firstName.trim(),
+          lastName.trim(),
+          city?.trim() || null,
+        ],
+      )
+      const userId = result.rows[0]!.id
+
+      const token = generateToken()
+      const tokenHash = hashToken(token)
+      const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 86400_000)
+
+      await pool.query(
+        `INSERT INTO sessions (user_id, token_hash, expires_at)
+         VALUES ($1, $2, $3)`,
+        [userId, tokenHash, expiresAt],
+      )
+
+      reply.setCookie('nh_session', token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: false,
+        path: '/',
+        expires: expiresAt,
+      })
+
+      const user = await loadUser(userId)
+      return { user }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : ''
+      if (msg.includes('duplicate key') || msg.includes('unique')) {
+        return reply.code(409).send({ error: 'That email is already registered' })
+      }
+      throw err
+    }
+  })
     app.post<{
         Body: {
             email: string

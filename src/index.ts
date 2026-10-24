@@ -11,6 +11,7 @@ import fastifyStatic from '@fastify/static'
 import { existsSync } from 'fs'
 import { startCleanupLoop, stopCleanupLoop } from './cleanup.js'
 
+
 const allowedOrigins = [
   config.frontendOrigin,
   'http://localhost:5173',
