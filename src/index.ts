@@ -6,6 +6,9 @@ import { pool } from './db.js'
 import { config } from './config.js'
 import { registerRoutes } from './routes/index.js'
 import { attachUser } from './middleware/auth.js'
+import path from 'path'
+import fastifyStatic from '@fastify/static'
+import { existsSync } from 'fs'
 
 const allowedOrigins = [
   config.frontendOrigin,
@@ -45,6 +48,26 @@ async function main(): Promise<void> {
 
   app.addHook('preHandler', attachUser)
   await registerRoutes(app)
+  const distPath = path.resolve(process.cwd(), '../dist')
+  if (existsSync(distPath)) {
+    await app.register(fastifyStatic, {
+      root: distPath,
+      prefix: '/',
+      wildcard: false,
+    })
+
+    app.setNotFoundHandler((req, reply) => {
+      // API + health keep returning JSON 404s
+      if (req.url.startsWith('/api/') || req.url === '/health') {
+        return reply.code(404).send({ error: 'Not found' })
+      }
+      // Everything else gets the SPA shell
+      if (req.method === 'GET') {
+        return reply.sendFile('index.html')
+      }
+      reply.code(404).send({ error: 'Not found' })
+    })
+  }
 
   app.addHook('onClose', async () => {
     await pool.end()
