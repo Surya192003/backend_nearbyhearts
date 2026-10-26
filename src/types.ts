@@ -4,13 +4,12 @@ export type ApiPartner = {
   lastName: string
   avatarUrl: string | null
   city: string
+  state: string | null
+  country: string | null
   timezone: string
+  latitude: number | null
+  longitude: number | null
   lastSeenAt: string
-}
-
-export type ApiCouple = {
-  id: string
-  togetherSince: string | null
 }
 
 export type ApiUser = {
@@ -20,10 +19,19 @@ export type ApiUser = {
   lastName: string
   avatarUrl: string | null
   city: string
+  state: string | null
+  country: string | null
   timezone: string
+  latitude: number | null
+  longitude: number | null
   lastSeenAt: string
   couple: ApiCouple | null
   partner: ApiPartner | null
+}
+
+export type ApiCouple = {
+  id: string
+  togetherSince: string | null
 }
 
 export type ApiVisit = {

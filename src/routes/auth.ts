@@ -6,7 +6,6 @@ import type { ApiCouple, ApiPartner, ApiUser } from '../types.js'
 import { config } from '../config.js'
 
 async function loadUser(userId: string): Promise<ApiUser | null> {
-  // ---- Query 1: base user ----
   const userRes = await pool.query<{
     id: string
     email: string
@@ -14,12 +13,17 @@ async function loadUser(userId: string): Promise<ApiUser | null> {
     last_name: string
     avatar_url: string | null
     city: string | null
+    state: string | null
+    country: string | null
     timezone: string
+    latitude: number | null
+    longitude: number | null
     last_seen_at: Date
   }>(
-    `SELECT id, email, first_name, last_name, avatar_url, city,
+    `SELECT id, email, first_name, last_name, avatar_url,
+            city, state, country,
             COALESCE(timezone, 'UTC') AS timezone,
-            last_seen_at
+            latitude, longitude, last_seen_at
        FROM users
       WHERE id = $1`,
     [userId],
@@ -27,7 +31,6 @@ async function loadUser(userId: string): Promise<ApiUser | null> {
   const u = userRes.rows[0]
   if (!u) return null
 
-  // ---- Query 2: couple + partner via user_couples view ----
   const partnerRes = await pool.query<{
     couple_id: string
     together_since: Date | null
@@ -36,7 +39,11 @@ async function loadUser(userId: string): Promise<ApiUser | null> {
     partner_last_name: string
     partner_avatar_url: string | null
     partner_city: string | null
+    partner_state: string | null
+    partner_country: string | null
     partner_timezone: string
+    partner_latitude: number | null
+    partner_longitude: number | null
     partner_last_seen_at: Date
   }>(
     `SELECT
@@ -47,7 +54,11 @@ async function loadUser(userId: string): Promise<ApiUser | null> {
        p.last_name     AS partner_last_name,
        p.avatar_url    AS partner_avatar_url,
        p.city          AS partner_city,
-       p.timezone      AS partner_timezone,
+       p.state         AS partner_state,
+       p.country       AS partner_country,
+       COALESCE(p.timezone, 'UTC') AS partner_timezone,
+       p.latitude      AS partner_latitude,
+       p.longitude     AS partner_longitude,
        p.last_seen_at  AS partner_last_seen_at
      FROM user_couples uc
      JOIN couples c ON c.id = uc.couple_id
@@ -65,7 +76,11 @@ async function loadUser(userId: string): Promise<ApiUser | null> {
         lastName: pr.partner_last_name,
         avatarUrl: pr.partner_avatar_url,
         city: pr.partner_city ?? '',
-        timezone: pr.partner_timezone ?? 'UTC',
+        state: pr.partner_state,
+        country: pr.partner_country,
+        timezone: pr.partner_timezone,
+        latitude: pr.partner_latitude,
+        longitude: pr.partner_longitude,
         lastSeenAt: (pr.partner_last_seen_at ?? new Date()).toISOString(),
       }
     : null
@@ -86,7 +101,11 @@ async function loadUser(userId: string): Promise<ApiUser | null> {
     lastName: u.last_name,
     avatarUrl: u.avatar_url,
     city: u.city ?? '',
+    state: u.state,
+    country: u.country,
     timezone: u.timezone,
+    latitude: u.latitude,
+    longitude: u.longitude,
     lastSeenAt: u.last_seen_at.toISOString(),
     couple,
     partner,
