@@ -4,6 +4,8 @@ import { generateToken, hashToken, SESSION_TTL_DAYS } from '../auth.js'
 import { requiresAuth } from '../middleware/auth.js'
 import type { ApiCouple, ApiPartner, ApiUser } from '../types.js'
 import { config } from '../config.js'
+import type { FastifyReply } from 'fastify'
+
 
 type UserRow = {
     id: string
@@ -32,6 +34,11 @@ type UserRow = {
     partner_longitude: number | null
     partner_last_seen_at: Date | null
 }
+
+const COOKIE = config.sessionCookie.name  
+const MAX_AGE = SESSION_TTL_DAYS * 24 * 60 * 60
+const token = generateToken()
+const tokenHash = hashToken(token)
 
 async function loadUser(userId: string): Promise<ApiUser | null> {
     const r = await pool.query<UserRow>(
@@ -102,6 +109,20 @@ async function loadUser(userId: string): Promise<ApiUser | null> {
         couple,
         partner,
     }
+}
+
+export function setSessionCookie(reply: FastifyReply, token: string): void {
+  reply.setCookie(COOKIE, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',   // false in dev
+    sameSite: 'lax',                                 // fine because Vite proxy = same-origin
+    path: '/',
+    maxAge: MAX_AGE,
+  })
+}
+
+export function clearSessionCookie(reply: FastifyReply): void {
+  reply.clearCookie(COOKIE, { path: '/' })
 }
 
 async function issueSession(
