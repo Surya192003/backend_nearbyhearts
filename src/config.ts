@@ -27,7 +27,6 @@ export const config = {
 // Always log — this is the single most useful debugging line when cookies
 // go missing. Never gate it on isProd.
 console.log('[config] FRONTEND_ORIGIN =', JSON.stringify(rawFrontendOrigin))
-console.log('[config] origin is HTTPS  =', originIsHttps)
 console.log('[config] NODE_ENV         =', process.env.NODE_ENV ?? '(unset)')
 console.log('[config] cookie sameSite   =', config.sessionCookie.sameSite)
 console.log('[config] cookie secure     =', config.sessionCookie.secure)
