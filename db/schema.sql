@@ -263,3 +263,26 @@ LEFT JOIN (
   FROM feed_reactions
   GROUP BY feed_item_id
 ) rc ON rc.feed_item_id = fi.id;
+
+CREATE TABLE IF NOT EXISTS visits (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  couple_id           UUID NOT NULL REFERENCES couples(id) ON DELETE CASCADE,
+  created_by          UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title               TEXT NOT NULL DEFAULT 'Visit',
+  scheduled_at        TIMESTAMPTZ NOT NULL,
+  status              TEXT NOT NULL DEFAULT 'scheduled'
+                      CHECK (status IN ('scheduled','cancel_pending','cancelled','completed')),
+  cancel_requested_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  cancel_reason       TEXT,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS visits_couple_idx ON visits (couple_id, scheduled_at);
+CREATE INDEX IF NOT EXISTS visits_pending_cancel_idx
+  ON visits (couple_id) WHERE status = 'cancel_pending';
+
+  CREATE OR REPLACE VIEW user_couples AS
+  SELECT user_a_id AS user_id, id AS couple_id, user_b_id AS partner_id FROM couples
+  UNION ALL
+  SELECT user_b_id AS user_id, id AS couple_id, user_a_id AS partner_id FROM couples;

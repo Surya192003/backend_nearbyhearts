@@ -4,11 +4,7 @@ export type ApiPartner = {
   lastName: string
   avatarUrl: string | null
   city: string
-  state: string | null
-  country: string | null
   timezone: string
-  latitude: number | null
-  longitude: number | null
   lastSeenAt: string
 }
 
@@ -19,17 +15,13 @@ export type ApiCouple = {
 
 export type ApiUser = {
   id: string
+  email: string
   firstName: string
   lastName: string
-  email: string
   avatarUrl: string | null
   city: string
-  state: string | null
-  country: string | null
   timezone: string
-  latitude: number | null
-  longitude: number | null
-  pairCode: string
+  lastSeenAt: string
   couple: ApiCouple | null
   partner: ApiPartner | null
 }

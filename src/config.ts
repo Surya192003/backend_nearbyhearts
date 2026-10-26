@@ -1,12 +1,11 @@
 const isProd = process.env.NODE_ENV === 'production'
 
-function normaliseOrigin(value: string): string {
-  return value.trim().replace(/\/+$/, '')
-}
+function normaliseOrigin(v: string): string { return v.trim().replace(/\/+$/, '') }
 
 const rawFrontendOrigin = normaliseOrigin(
   process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
 )
+const originIsHttps = rawFrontendOrigin.startsWith('https://')
 
 export const config = {
   isProd,
@@ -18,16 +17,14 @@ export const config = {
   sessionCookie: {
     name: 'nh_session',
     httpOnly: true,
-    sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
-    secure: isProd,
+    sameSite: (originIsHttps ? 'none' : 'lax') as 'none' | 'lax',
+    secure: originIsHttps,
     path: '/',
   },
 }
 
-// Always log — this is the single most useful debugging line when cookies
-// go missing. Never gate it on isProd.
 console.log('[config] FRONTEND_ORIGIN =', JSON.stringify(rawFrontendOrigin))
-console.log('[config] NODE_ENV         =', process.env.NODE_ENV ?? '(unset)')
+console.log('[config] origin is HTTPS  =', originIsHttps)
 console.log('[config] cookie sameSite   =', config.sessionCookie.sameSite)
 console.log('[config] cookie secure     =', config.sessionCookie.secure)
 console.log('[config] DATABASE_SSL      =', config.databaseSsl)
